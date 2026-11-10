@@ -1,10 +1,13 @@
 package ro.pub.cs.systems.eim.practicaltest01var04
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,6 +37,16 @@ class MainActivity : ComponentActivity() {
     private var secondText by mutableStateOf("")
     private var information by mutableStateOf("")
 
+    private val secondActivityLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val message = when (result.resultCode) {
+                RESULT_OK -> "OK"
+                RESULT_CANCELED -> "Cancel"
+                else -> "Unknown (${result.resultCode})"
+            }
+            Toast.makeText(this, "Result: $message", Toast.LENGTH_SHORT).show()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -56,8 +69,13 @@ class MainActivity : ComponentActivity() {
                                 if (secondChecked) add(secondText)
                             }.joinToString(" ")
                         },
-                        // TODO: startActivity(Intent(this, SecondaryActivity::class.java))
-                        onNavigate = {},
+                        onNavigate = {
+                            val intent = Intent(this, SecondActivity::class.java).apply {
+                                putExtra(SecondActivity.FIRST_TEXT_EXTRA, firstText)
+                                putExtra(SecondActivity.SECOND_TEXT_EXTRA, secondText)
+                            }
+                            secondActivityLauncher.launch(intent)
+                        },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }

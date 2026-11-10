@@ -1,6 +1,7 @@
 package ro.pub.cs.systems.eim.practicaltest01var04
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,7 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +27,13 @@ import androidx.compose.ui.unit.dp
 import ro.pub.cs.systems.eim.practicaltest01var04.ui.theme.PracticalTest01Var04Theme
 
 class MainActivity : ComponentActivity() {
+    // tin starea in cu mutableStateOf ca androidul sa nu o mai salveze
+    private var firstChecked by mutableStateOf(false)
+    private var secondChecked by mutableStateOf(false)
+    private var firstText by mutableStateOf("")
+    private var secondText by mutableStateOf("")
+    private var information by mutableStateOf("")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -34,6 +41,21 @@ class MainActivity : ComponentActivity() {
             PracticalTest01Var04Theme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     MainScreen(
+                        firstChecked = firstChecked,
+                        onFirstCheckedChange = { firstChecked = it },
+                        secondChecked = secondChecked,
+                        onSecondCheckedChange = { secondChecked = it },
+                        firstText = firstText,
+                        onFirstTextChange = { firstText = it },
+                        secondText = secondText,
+                        onSecondTextChange = { secondText = it },
+                        information = information,
+                        onDisplayInformation = {
+                            information = buildList {
+                                if (firstChecked) add(firstText)
+                                if (secondChecked) add(secondText)
+                            }.joinToString(" ")
+                        },
                         // TODO: startActivity(Intent(this, SecondaryActivity::class.java))
                         onNavigate = {},
                         modifier = Modifier.padding(innerPadding)
@@ -42,19 +64,54 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    // salvare manuala a controalelor cand sistemul distruge activitatea
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(FIRST_CHECKED_KEY, firstChecked)
+        outState.putBoolean(SECOND_CHECKED_KEY, secondChecked)
+        outState.putString(FIRST_TEXT_KEY, firstText)
+        outState.putString(SECOND_TEXT_KEY, secondText)
+        outState.putString(INFORMATION_KEY, information)
+        Log.d(TAG, "onSaveInstanceState: $outState")
+    }
+
+    // restaurare manuala a controalelor la recrearea activitatii
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        firstChecked = savedInstanceState.getBoolean(FIRST_CHECKED_KEY, false)
+        secondChecked = savedInstanceState.getBoolean(SECOND_CHECKED_KEY, false)
+        firstText = savedInstanceState.getString(FIRST_TEXT_KEY, "")
+        secondText = savedInstanceState.getString(SECOND_TEXT_KEY, "")
+        information = savedInstanceState.getString(INFORMATION_KEY, "")
+        Log.d(TAG, "onRestoreInstanceState: $savedInstanceState")
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
+        private const val FIRST_CHECKED_KEY = "firstChecked"
+        private const val SECOND_CHECKED_KEY = "secondChecked"
+        private const val FIRST_TEXT_KEY = "firstText"
+        private const val SECOND_TEXT_KEY = "secondText"
+        private const val INFORMATION_KEY = "information"
+    }
 }
 
 @Composable
 fun MainScreen(
+    firstChecked: Boolean,
+    onFirstCheckedChange: (Boolean) -> Unit,
+    secondChecked: Boolean,
+    onSecondCheckedChange: (Boolean) -> Unit,
+    firstText: String,
+    onFirstTextChange: (String) -> Unit,
+    secondText: String,
+    onSecondTextChange: (String) -> Unit,
+    information: String,
+    onDisplayInformation: () -> Unit,
     onNavigate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var firstChecked by remember { mutableStateOf(false) }
-    var secondChecked by remember { mutableStateOf(false) }
-    var firstText by remember { mutableStateOf("") }
-    var secondText by remember { mutableStateOf("") }
-    var information by remember { mutableStateOf("") }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -71,25 +128,20 @@ fun MainScreen(
         }
         CheckedTextField(
             checked = firstChecked,
-            onCheckedChange = { firstChecked = it },
+            onCheckedChange = onFirstCheckedChange,
             text = firstText,
-            onTextChange = { firstText = it },
+            onTextChange = onFirstTextChange,
             label = "Text 1"
         )
         CheckedTextField(
             checked = secondChecked,
-            onCheckedChange = { secondChecked = it },
+            onCheckedChange = onSecondCheckedChange,
             text = secondText,
-            onTextChange = { secondText = it },
+            onTextChange = onSecondTextChange,
             label = "Text 2"
         )
         Button(
-            onClick = {
-                information = buildList {
-                    if (firstChecked) add(firstText)
-                    if (secondChecked) add(secondText)
-                }.joinToString(" ")
-            },
+            onClick = onDisplayInformation,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Display Information")
@@ -126,6 +178,18 @@ fun CheckedTextField(
 @Composable
 fun MainScreenPreview() {
     PracticalTest01Var04Theme {
-        MainScreen(onNavigate = {})
+        MainScreen(
+            firstChecked = true,
+            onFirstCheckedChange = {},
+            secondChecked = false,
+            onSecondCheckedChange = {},
+            firstText = "Text 1",
+            onFirstTextChange = {},
+            secondText = "Text 2",
+            onSecondTextChange = {},
+            information = "Text 1",
+            onDisplayInformation = {},
+            onNavigate = {}
+        )
     }
 }
